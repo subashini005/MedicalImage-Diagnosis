@@ -16,5 +16,11 @@
   "bugs": {
     "url": "https://github.com/subashini005/MedicalImage-Diagnosis/issues"
   },
-  "homepage": "https://github.com/subashini005/MedicalImage-Diagnosis#readme"
+  "homepage": "https://github.com/subashini005/MedicalImage-Diagnosis#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "lokijs": "^1.5.12"
+  }
 }
