@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const { signup } = require("./controllers/controls");
 const app = express();
-
 app.use(express.json());
 app.use(cors());
 app.post("/signup", signup);
