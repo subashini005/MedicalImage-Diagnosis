@@ -1,6 +1,6 @@
 const Loki = require("lokijs");
 const path = require("path");
-const dbPath = path.join("C:\\Users\\Welcome\\Desktop\\Signup_API\\Database", "users.json");
+const dbPath = path.join("C:\\Users\\Welcome\\Desktop\\SignUpPage\\MedicalImage-Diagnosis\\Database", "users.json");
 
 const db = new Loki(dbPath, {
   autoload: true,
