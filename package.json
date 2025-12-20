@@ -21,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "lokijs": "^1.5.12"
+    "lokijs": "^1.5.12",
+    "nodemailer": "^7.0.11"
   }
 }
