@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const getUsersCollection = require("../db");
+const { getUsers, insertUser, updateUser } = require("../db");
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
@@ -12,14 +12,14 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
     
-    const users = getUsersCollection();
+    const users = getUsers();
     const existingUser = users.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "Email already registered" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    users.insert({
+    insertUser({
       username,
       email,
       password: hashedPassword

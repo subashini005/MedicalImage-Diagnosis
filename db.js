@@ -1,6 +1,13 @@
 const Loki = require("lokijs");
+
 const dbPath = __dirname + "/Database/users.json";
-const db = new Loki(dbPath, { autoload: true, autosave: true, autosaveInterval: 4000, autoloadCallback: databaseInitialize});
+
+const db = new Loki(dbPath, {
+  autoload: true,
+  autosave: true,
+  autosaveInterval: 4000,
+  autoloadCallback: databaseInitialize,
+});
 
 let users;
 function databaseInitialize() {
@@ -10,7 +17,35 @@ function databaseInitialize() {
       unique: ["email"],
     });
   }
+
   db.saveDatabase();
 }
 
-module.exports = () => users;
+function getNextSerialNumber() {
+  const count = users.count();
+  return count + 1;
+}
+
+function insertUser({ username, email, password }) {
+  const now = new Date();
+
+  return users.insert({
+    serialNumber: getNextSerialNumber(), // ✅ AUTO SERIAL
+    username,
+    email,
+    password,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+function updateUser(user) {
+  user.updatedAt = new Date();
+  return users.update(user);
+}
+
+module.exports = {
+  getUsers: () => users,
+  insertUser,
+  updateUser,
+};
