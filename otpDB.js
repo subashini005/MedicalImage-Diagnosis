@@ -1,5 +1,6 @@
 const Loki = require("lokijs");
-const db = new Loki("otp.db.json", { autoload: true, autosave: true, autosaveInterval: 3000,autoloadCallback: initDB, });
+const dbPath = __dirname + "/Database/otp.db.json";
+const db = new Loki( dbPath, { autoload: true, autosave: true, autosaveInterval: 3000,autoloadCallback: initDB, });
 
 let otps;
 function initDB() {
