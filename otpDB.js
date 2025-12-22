@@ -16,27 +16,21 @@ function initDB() {
 function getNextSerialNumber() {
   return otps.count() + 1;
 }
-
 function insertOtp({ userId, email, otp }) {
   const now = new Date();
   return otps.insert({ serialNumber: getNextSerialNumber(), userId, email, otp,validated: 0, createdAt: now, updatedAt: now });
 }
-
 function getOtpByEmail(email) {
   return otps.findOne({ email });
 }
-
 function verifyOtp(email) {
   const record = otps.findOne({ email });
   if (!record) return null;
-
   record.validated = 1;
   record.updatedAt = new Date();
   return otps.update(record);
 }
-
 function deleteOtp(email) {
   return otps.findAndRemove({ email });
 }
-
 module.exports = { getOtps: () => otps, insertOtp, getOtpByEmail, verifyOtp, deleteOtp };
