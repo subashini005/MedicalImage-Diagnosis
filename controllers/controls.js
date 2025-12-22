@@ -7,13 +7,9 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-/* ======================
-   SIGNUP
-====================== */
 exports.signup = async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -25,11 +21,7 @@ exports.signup = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    insertUser({
-      username,
-      email,
-      password: hashedPassword,
-    });
+    insertUser({ username, email, password: hashedPassword });
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -40,9 +32,6 @@ exports.signup = async (req, res) => {
   }
 };
 
-/* ======================
-   SEND OTP (WITH MAPPING)
-====================== */
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -52,7 +41,6 @@ exports.sendOtp = async (req, res) => {
 
     const users = getUsers();
 
-    // 🔥 users.json mapping check
     const user = users.findOne({ email });
     if (!user) {
       return res.status(400).json({
@@ -62,12 +50,10 @@ exports.sendOtp = async (req, res) => {
 
     const otp = generateOTP();
 
-    // remove old OTP
     deleteOtp(email);
 
-    // insert OTP with userId mapping
     insertOtp({
-      userId: user.serialNumber, // 🔥 mapping key
+      userId: user.serialNumber,
       email,
       otp,
     });
