@@ -8,7 +8,6 @@ app.use(express.json());
 app.use(cors());
 app.post("/signup", signup);
 app.post("/send-otp", sendOtp);
-app.post("/verify-otp", verifyOtp);
 
 const PORT = process.env.PORT;
 
