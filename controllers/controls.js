@@ -3,10 +3,6 @@ const { getUsers, insertUser } = require("../db");
 const transporter = require("../mail");
 const { insertOtp, getOtpByEmail, verifyOtp, deleteOtp } = require("../otpDB");
 
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000);
-}
-
 exports.signup = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -31,6 +27,10 @@ exports.signup = async (req, res) => {
   }
 };
 
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000);
+}
+
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -53,7 +53,8 @@ exports.sendOtp = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Your OTP Verification Code",
-      text: `Your OTP is ${otp}. It is valid for ${process.env.OTP_EXPIRY_MINUTES} minutes.`,
+      text: `Your OTP is ${otp}.
+      It is valid for ${process.env.OTP_EXPIRY_MINUTES} minutes."Thankyou for signing up."`,
     });
     return res.status(200).json({ message: "OTP sent successfully" });
   } catch (err) {
