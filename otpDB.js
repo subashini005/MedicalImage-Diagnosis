@@ -1,7 +1,5 @@
 const Loki = require("lokijs");
-
 const dbPath = __dirname + "/Database/otp.db.json";
-
 const db = new Loki(dbPath, { autoload: true, autosave: true, autosaveInterval: 3000, autoloadCallback: initDB });
 
 let otps;
@@ -21,7 +19,6 @@ function getNextSerialNumber() {
 
 function insertOtp({ userId, email, otp }) {
   const now = new Date();
-
   return otps.insert({ serialNumber: getNextSerialNumber(), userId, email, otp,validated: 0, createdAt: now, updatedAt: now });
 }
 
