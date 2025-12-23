@@ -1,50 +1,24 @@
 const bcrypt = require("bcryptjs");
-const { getUsers, insertUser } = require("../db");
+const { getUsers, insertUser, markUserVerified } = require("../db");
 const transporter = require("../mail");
-const { insertOtp, getOtpByEmail, verifyOtp, deleteOtp } = require("../otpDB");
-
-exports.signup = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const users = getUsers();
-    if (users.findOne({ email })) {
-      return res.status(409).json({ message: "Email already registered" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    insertUser({ username, email, password: hashedPassword });
-
-    return res.status(201).json({
-      message: "User registered successfully",
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
+const { insertOtp, getOtpByEmail, markOtpVerified, deleteOtp } = require("../otpDB");
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-exports.sendOtp = async (req, res) => {
+exports.signup = async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email required" });
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "All fields required" });
     }
-
     const users = getUsers();
-
-    const user = users.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email ID" });
+    if (users.findOne({ email })) {
+      return res.status(409).json({ message: "Email already registered" });
     }
-
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = insertUser({ username, email, password: hashedPassword });
     const otp = generateOTP();
     deleteOtp(email);
     insertOtp({ userId: user.serialNumber, email, otp });
@@ -52,14 +26,16 @@ exports.sendOtp = async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your OTP Verification Code",
-      text: `Your OTP is ${otp}.
-      It is valid for ${process.env.OTP_EXPIRY_MINUTES} minutes."Thankyou for signing up."`,
+      subject: "Verify your email",
+      text: `Your OTP is ${otp}.It is valid for 5 minutes only.
+      "Thank you for signing up."`
     });
-    return res.status(200).json({ message: "OTP sent successfully" });
+    return res.status(201).json({
+      message: "OTP sent to email successfully.",
+    });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ message: "Failed to send OTP" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -67,29 +43,54 @@ exports.verifyOtp = (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      return res.status(400).json({
-        message: "Email and OTP are required",
-      });
+      return res.status(400).json({ message: "Email & OTP required" });
     }
-
+    const users = getUsers();
+    const user = users.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
     const record = getOtpByEmail(email);
     if (!record) {
       return res.status(400).json({ message: "OTP not found" });
     }
-
-    const expiryTime = new Date(record.createdAt).getTime() + process.env.OTP_EXPIRY_MINUTES * 60 * 1000;
+    const expiryTime = new Date(record.createdAt).getTime() + 5 * 60 * 1000;
     if (Date.now() > expiryTime) {
-      deleteOtp(email);
       return res.status(400).json({ message: "OTP expired" });
     }
     if (record.otp != otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-    verifyOtp(email);
-    deleteOtp(email);
-    return res.status(200).json({ message: "OTP verified successfully" });
+    markOtpVerified(email);
+    markUserVerified(email);
+    return res.status(200).json({
+      message: "Email verified successfully",
+    });
   } catch (err) {
     console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const users = getUsers();
+    const user = users.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
+    const otpRecord = getOtpByEmail(email);
+    if (!otpRecord || otpRecord.validatedAt !== 1) {
+      return res.status(403).json({
+        message: "Please verify your email first",
+      });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
+    return res.status(200).json({ message: "Login successful" });
+  } catch (err) {
     return res.status(500).json({ message: "Server error" });
   }
 };

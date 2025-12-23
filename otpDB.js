@@ -13,24 +13,25 @@ function initDB() {
   db.saveDatabase();
 }
 
-function getNextSerialNumber() {
-  return otps.count() + 1;
-}
 function insertOtp({ userId, email, otp }) {
   const now = new Date();
-  return otps.insert({ serialNumber: getNextSerialNumber(), userId, email, otp,validated: 0, createdAt: now, updatedAt: now });
+  return otps.insert({ userId, email, otp, validatedAt: 0, createdAt: now, updatedAt: now });
 }
+
 function getOtpByEmail(email) {
   return otps.findOne({ email });
 }
-function verifyOtp(email) {
+
+function markOtpVerified(email) {
   const record = otps.findOne({ email });
   if (!record) return null;
-  record.validated = 1;
+  record.validatedAt = 1;
   record.updatedAt = new Date();
   return otps.update(record);
 }
+
 function deleteOtp(email) {
   return otps.findAndRemove({ email });
 }
-module.exports = { getOtps: () => otps, insertOtp, getOtpByEmail, verifyOtp, deleteOtp };
+
+module.exports = { getOtpByEmail, insertOtp, markOtpVerified, deleteOtp };

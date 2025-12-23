@@ -20,12 +20,15 @@ function getNextSerialNumber() {
 
 function insertUser({ username, email, password }) {
   const now = new Date();
-  return users.insert({ serialNumber: getNextSerialNumber(), username, email, password, createdAt: now, updatedAt: now,});
+  return users.insert({ serialNumber: getNextSerialNumber(), username, email, password, validatedAt: 0, createdAt: now, updatedAt: now,});
 }
 
-function updateUser(user) {
-  user.updatedAt = new Date();
-  return users.update(user);
+function markUserVerified(email) {
+  const record = users.findOne({ email });
+  if (!record) return null;
+  record.validatedAt = 1;
+  record.updatedAt = new Date();
+  return users.update(record);
 }
 
-module.exports = { getUsers: () => users, insertUser, updateUser, };
+module.exports = { getUsers: () => users, insertUser, markUserVerified };
