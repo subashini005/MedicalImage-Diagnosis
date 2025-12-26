@@ -28,8 +28,7 @@ exports.signup = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Verify your email",
-      text: `Your OTP is ${otp}.It is valid for 5 minutes only.
-      "Thank you for signing up."`
+      text: `Your OTP is ${otp}.It is valid for 5 minutes only. "Thank you for signing up."`
     });
     return res.status(201).json({
       message: "OTP sent to email successfully.",
@@ -72,6 +71,7 @@ exports.verifyOtp = (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,24 +102,20 @@ exports.forgotPassword = async (req, res) => {
     if (!email) {
       return res.status(400).json({ message: "Email required" });
     }
-
     const users = getUsers();
     const user = users.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     const otp = generateOTP();
     deleteResetOtp(email);
     insertResetOtp({ email, otp });
-
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Password Reset OTP",
       text: `Your password reset OTP is ${otp}. It is valid for 5 minutes.`,
     });
-
     return res.status(200).json({
       message: "Reset OTP sent to email",
     });
@@ -132,45 +128,34 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
-
     if (!email || !otp || !newPassword) {
       return res.status(400).json({
         message: "Email, OTP & new password required",
       });
     }
-
     const record = getResetOtpByEmail(email);
     if (!record) {
       return res.status(400).json({ message: "OTP not found" });
     }
-
     const expiryTime =
       new Date(record.createdAt).getTime() + 5 * 60 * 1000;
-
     if (Date.now() > expiryTime) {
       return res.status(400).json({ message: "OTP expired" });
     }
-
     if (record.otp != otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-
     const users = getUsers();
     const user = users.findOne({ email });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     user.password = hashedPassword;
     user.updatedAt = new Date();
-
     users.update(user);
     markResetOtpVerified(email);
     deleteResetOtp(email);
-
     return res.status(200).json({
       message: "Password reset successful",
     });
