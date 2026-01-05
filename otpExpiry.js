@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const { getOtpCollection } = require("../otpDB");
+const { getOtpCollection } = require("./otpDB");
 
 cron.schedule("*/5 * * * *", () => {
   const otps = getOtpCollection();

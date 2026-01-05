@@ -50,9 +50,12 @@ exports.verifyOtp = (req, res) => {
     if (!record) {
       return res.status(400).json({ message: "OTP not found" });
     }
-    const expiryTime = new Date(record.createdAt).getTime() + 5 * 60 * 1000;
-    if (Date.now() > expiryTime) {
+    if (record.validatedAt === 2) {
       return res.status(400).json({ message: "OTP expired" });
+    }
+
+    if (record.validatedAt === 1) {
+      return res.status(400).json({ message: "OTP already verified" });
     }
     if (record.otp != otp) {
       return res.status(400).json({ message: "Invalid OTP" });
@@ -125,8 +128,7 @@ exports.forgotPassword = async (req, res) => {
 };
 
 exports.resetPassword = async (req, res) => {
-  try {
-    const { userId, otp, newPassword } = req.body;
+  try { const { userId, otp, newPassword } = req.body;
     if (!userId || !otp || !newPassword) {
       return res.status(400).json({
         message: "User ID, OTP & new password required",
@@ -138,8 +140,16 @@ exports.resetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     const record = getOtpByUserId(userId);
-    if (!record || record.validatedAt !== 0) {
-      return res.status(400).json({ message: "OTP invalid or expired" });
+    if (!record) {
+      return res.status(400).json({ message: "OTP not found" });
+    }
+
+    if (record.validatedAt === 2) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    if (record.validatedAt === 1) {
+      return res.status(400).json({ message: "OTP already used" });
     }
 
     if (record.otp != otp) {

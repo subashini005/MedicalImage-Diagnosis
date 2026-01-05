@@ -6,8 +6,7 @@ const db = new Loki(dbPath, { autoload: true, autosave: true, autosaveInterval: 
 let otps;
 function initDB() {
   otps = db.getCollection("otps");
-  if (!otps) {
-    otps = db.addCollection("otps", {
+  if (!otps) { otps = db.addCollection("otps", {
       unique: ["userId"],
     });
   }
