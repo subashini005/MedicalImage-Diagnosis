@@ -1,8 +1,7 @@
 const bcrypt = require("bcryptjs");
 const { getUsers, insertUser, markUserVerified } = require("../db");
 const transporter = require("../mail");
-const { insertOtp, getOtpByEmail, markOtpVerified, deleteOtp } = require("../otpDB");
-const { insertResetOtp, getResetOtpByEmail, markResetOtpVerified, deleteResetOtp } = require("../reset_otpDB");
+const { insertOtp, getOtpByUserId, markOtpVerified } = require("../otpDB");
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
@@ -21,8 +20,7 @@ exports.signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = insertUser({ username, email, password: hashedPassword });
     const otp = generateOTP();
-    deleteOtp(email);
-    insertOtp({ userId: user.serialNumber, email, otp });
+    insertOtp({ userId: user.userId, otp });
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -30,9 +28,7 @@ exports.signup = async (req, res) => {
       subject: "Verify your email",
       text: `Your OTP is ${otp}.It is valid for 5 minutes only. "Thank you for signing up."`
     });
-    return res.status(201).json({
-      message: "OTP sent to email successfully.",
-    });
+    return res.status(201).json({ message: "OTP sent to email successfully.", userId: user.userId });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -41,16 +37,16 @@ exports.signup = async (req, res) => {
 
 exports.verifyOtp = (req, res) => {
   try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ message: "Email & OTP required" });
+    const { userId, otp } = req.body;
+    if (!userId || !otp) {
+      return res.status(400).json({ message: "User ID & OTP required" });
     }
     const users = getUsers();
-    const user = users.findOne({ email });
+    const user = users.findOne({ userId });
     if (!user) {
-      return res.status(400).json({ message: "Invalid email" });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
-    const record = getOtpByEmail(email);
+    const record = getOtpByUserId(userId);
     if (!record) {
       return res.status(400).json({ message: "OTP not found" });
     }
@@ -61,11 +57,9 @@ exports.verifyOtp = (req, res) => {
     if (record.otp != otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-    markOtpVerified(email);
-    markUserVerified(email);
-    return res.status(200).json({
-      message: "Email verified successfully",
-    });
+    markOtpVerified(userId);
+    markUserVerified(userId);
+    return res.status(200).json({ message: "Email verified successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -80,8 +74,7 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid email" });
     }
-    const otpRecord = getOtpByEmail(email);
-    if (!otpRecord || otpRecord.validatedAt !== 1) {
+    if (user.validatedAt !== 1) {
       return res.status(403).json({
         message: "Please verify your email first",
       });
@@ -107,18 +100,24 @@ exports.forgotPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    const existingOtp = getOtpByUserId(user.userId);
+    if (existingOtp && existingOtp.validatedAt === 0) {
+      return res.status(400).json({
+        message: "OTP already sent. Please verify existing OTP.",
+        userId: user.userId,
+      });
+    }
     const otp = generateOTP();
-    deleteResetOtp(email);
-    insertResetOtp({ email, otp });
+    insertOtp({ userId: user.userId, otp });
+    user.validatedAt = 0;
+    users.update(user);
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email,
+      to: user.email,
       subject: "Password Reset OTP",
       text: `Your password reset OTP is ${otp}. It is valid for 5 minutes.`,
     });
-    return res.status(200).json({
-      message: "Reset OTP sent to email",
-    });
+    return res.status(200).json({ message: "Reset OTP sent to email", userId: user.userId });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -127,38 +126,32 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) {
+    const { userId, otp, newPassword } = req.body;
+    if (!userId || !otp || !newPassword) {
       return res.status(400).json({
-        message: "Email, OTP & new password required",
+        message: "User ID, OTP & new password required",
       });
     }
-    const record = getResetOtpByEmail(email);
-    if (!record) {
-      return res.status(400).json({ message: "OTP not found" });
-    }
-    const expiryTime =
-      new Date(record.createdAt).getTime() + 5 * 60 * 1000;
-    if (Date.now() > expiryTime) {
-      return res.status(400).json({ message: "OTP expired" });
-    }
-    if (record.otp != otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
     const users = getUsers();
-    const user = users.findOne({ email });
+    const user = users.findOne({ userId });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    const record = getOtpByUserId(userId);
+    if (!record || record.validatedAt !== 0) {
+      return res.status(400).json({ message: "OTP invalid or expired" });
+    }
+
+    if (record.otp != otp) {
+      return res.status(400).json({ message: "Incorrect OTP" });
+    }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
+    user.validatedAt = 1;
     user.updatedAt = new Date();
     users.update(user);
-    markResetOtpVerified(email);
-    deleteResetOtp(email);
-    return res.status(200).json({
-      message: "Password reset successful",
-    });
+    markOtpVerified(userId);
+    return res.status(200).json({ message: "Password reset successful" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });

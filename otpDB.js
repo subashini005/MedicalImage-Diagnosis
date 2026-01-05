@@ -1,4 +1,5 @@
 const Loki = require("lokijs");
+const cron = require("node-cron");
 const dbPath = __dirname + "/Database/otp.db.json";
 const db = new Loki(dbPath, { autoload: true, autosave: true, autosaveInterval: 3000, autoloadCallback: initDB });
 
@@ -7,23 +8,24 @@ function initDB() {
   otps = db.getCollection("otps");
   if (!otps) {
     otps = db.addCollection("otps", {
-      unique: ["email"],
+      unique: ["userId"],
     });
   }
   db.saveDatabase();
 }
 
-function insertOtp({ userId, email, otp }) {
+function insertOtp({ userId, otp }) {
+  otps.findAndRemove({ userId });
   const now = new Date();
-  return otps.insert({ userId, email, otp, validatedAt: 0, createdAt: now, updatedAt: now });
+  return otps.insert({ userId, otp, validatedAt: 0, createdAt: now, updatedAt: now });
 }
 
-function getOtpByEmail(email) {
-  return otps.findOne({ email });
+function getOtpByUserId(userId) {
+  return otps.findOne({ userId });
 }
 
-function markOtpVerified(email) {
-  const record = otps.findOne({ email });
+function markOtpVerified(userId) {
+  const record = otps.findOne({ userId });
   if (!record) return null;
   record.validatedAt = 1;
   record.updatedAt = new Date();
@@ -34,4 +36,4 @@ function deleteOtp(email) {
   return otps.findAndRemove({ email });
 }
 
-module.exports = { getOtpByEmail, insertOtp, markOtpVerified, deleteOtp };
+module.exports = { getOtpByUserId, insertOtp, markOtpVerified, deleteOtp, getOtpCollection: () => otps, };

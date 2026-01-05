@@ -1,4 +1,5 @@
 const Loki = require("lokijs");
+const { v4: uuidv4 } = require("uuid");
 const dbPath = __dirname + "/Database/users.json";
 const db = new Loki(dbPath, { autoload: true, autosave: true, autosaveInterval: 4000, autoloadCallback: databaseInitialize,});
 
@@ -7,7 +8,7 @@ function databaseInitialize() {
   users = db.getCollection("users");
   if (!users) {
     users = db.addCollection("users", {
-      unique: ["email"],
+      unique: ["userId", "email"],
     });
   }
   db.saveDatabase();
@@ -20,11 +21,11 @@ function getNextSerialNumber() {
 
 function insertUser({ username, email, password }) {
   const now = new Date();
-  return users.insert({ serialNumber: getNextSerialNumber(), username, email, password, validatedAt: 0, createdAt: now, updatedAt: now,});
+  return users.insert({ serialNumber: getNextSerialNumber(), userId: uuidv4(), username, email, password, validatedAt: 0, createdAt: now, updatedAt: now,});
 }
 
-function markUserVerified(email) {
-  const record = users.findOne({ email });
+function markUserVerified(userId) {
+  const record = users.findOne({ userId });
   if (!record) return null;
   record.validatedAt = 1;
   record.updatedAt = new Date();
