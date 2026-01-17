@@ -14,11 +14,16 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
     const users = getUsers();
-    if (users.findOne({ email })) {
+    const existingUser = users.findOne({ email });
+    if (existingUser && existingUser.validatedAt === 1) {
       return res.status(409).json({ message: "Email already registered" });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = insertUser({ username, email, password: hashedPassword });
+    let user = existingUser;
+    if (!existingUser) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user = insertUser({ username, email, password: hashedPassword });
+    }
+    
     const otp = generateOTP();
     insertOtp({ userId: user.userId, otp });
 

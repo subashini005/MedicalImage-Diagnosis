@@ -6,6 +6,10 @@ const { signup, verifyOtp, login, forgotPassword, resetPassword } = require("./c
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static("frontend/dist"));
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/frontend/dist/index.html");
+});
 app.post("/signup", signup);
 app.post("/verify-otp", verifyOtp);
 app.post("/login", login);
