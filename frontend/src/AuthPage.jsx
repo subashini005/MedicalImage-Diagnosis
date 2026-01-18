@@ -36,9 +36,9 @@ const AuthPage = () => {
 
     document.getElementById("signupBtn").onclick = async () => {
       try {
-        const username = document.getElementById("su-username").value.trim();
-        const email = document.getElementById("su-email").value.trim();
-        const password = document.getElementById("su-password").value;
+        const username = document.getElementById("username").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
         if (!username || !email || !password) {
           alert("Please fill in all fields");
@@ -55,9 +55,9 @@ const AuthPage = () => {
         currentUserId = res.data.userId;
         otpPurpose = "signup";
         
-        document.getElementById("su-username").value = "";
-        document.getElementById("su-email").value = "";
-        document.getElementById("su-password").value = "";
+        document.getElementById("username").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("password").value = "";
         document.getElementById("otp-input").value = "";
         document.getElementById("new-password-input").value = "";
         
@@ -112,16 +112,16 @@ const AuthPage = () => {
 
     document.getElementById("loginBtn").onclick = async () => {
       try {
-        const email = document.getElementById("li-email").value.trim();
-        const password = document.getElementById("li-password").value;
+        const email = document.getElementById("g-email").value.trim();
+        const password = document.getElementById("gm-password").value;
         if (!email || !password) {
           alert("Please enter email and password");
           return;
         }
         const res = await axios.post(`${API}/login`, { email, password });
         alert(res.data.message);
-        document.getElementById("li-email").value = "";
-        document.getElementById("li-password").value = "";
+        document.getElementById("g-email").value = "";
+        document.getElementById("gm-password").value = "";
       } catch (error) {
         alert(error.response?.data?.message || "Login failed. Please try again.");
       }
@@ -134,7 +134,7 @@ const AuthPage = () => {
 
     document.getElementById("sendOtpBtn").onclick = async () => {
       try {
-        const email = document.getElementById("fp-email").value.trim();
+        const email = document.getElementById("G-email").value.trim();
         if (!email) {
           alert("Please enter email");
           return;
@@ -144,7 +144,7 @@ const AuthPage = () => {
         alert(res.data.message);
         currentUserId = res.data.userId;
         otpPurpose = "forgot";
-        document.getElementById("fp-email").value = "";
+        document.getElementById("G-email").value = "";
         document.getElementById("otp-input").value = "";
         document.getElementById("new-password-input").value = "";
         document.getElementById("new-password-box").style.display = "block";
@@ -155,7 +155,7 @@ const AuthPage = () => {
         if (errorMessage === "OTP already sent. Please verify existing OTP.") {
           currentUserId = error.response?.data?.userId;
           otpPurpose = "forgot";
-          document.getElementById("fp-email").value = "";
+          document.getElementById("G-email").value = "";
           document.getElementById("otp-input").value = "";
           document.getElementById("new-password-input").value = "";
           document.getElementById("new-password-box").style.display = "block";
@@ -171,10 +171,10 @@ const AuthPage = () => {
         <form>
           <h1>Login</h1>
           <div className="input-box">
-            <input id="li-email" type="email" placeholder="Email" />
+            <input id="g-email" type="email" placeholder="Email" />
           </div>
           <div className="input-box">
-            <input id="li-password" type="password" placeholder="Password" />
+            <input id="gm-password" type="password" placeholder="Password" />
             <i className="bx bxs-lock-alt"></i>
           </div>
           <div className="forgot-link">
@@ -187,13 +187,13 @@ const AuthPage = () => {
         <form>
           <h1>Register</h1>
           <div className="input-box">
-            <input id="su-username" placeholder="Username" />
+            <input id="username" placeholder="Username" />
           </div>
           <div className="input-box">
-            <input id="su-email" type="email" placeholder="Email" />
+            <input id="email" type="email" placeholder="Email" />
           </div>
           <div className="input-box">
-            <input id="su-password" type="password" placeholder="Password" />
+            <input id="password" type="password" placeholder="Password" />
           </div>
           <button type="button" className="btn" id="signupBtn">Sign Up</button>
         </form>
@@ -214,7 +214,7 @@ const AuthPage = () => {
         <form>
           <h1>Forgot Password</h1>
           <div className="input-box">
-            <input id="fp-email" type="email" placeholder="Enter Email" />
+            <input id="G-email" type="email" placeholder="Enter Email" />
           </div>
           <button type="button" className="btn" id="sendOtpBtn">Send OTP</button>
         </form>
